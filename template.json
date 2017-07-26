@@ -120,7 +120,7 @@
                 "input": {
                     "lun": "[copyIndex('DataDisks')]",
                     "managedDisk": {
-                        "id": "[resourceId('Microsoft.Compute/disks', concat(variables('DataDisksPrefix'),copyIndex('StorageProfileDataDisksLoop')))]"
+                        "id": "[resourceId('Microsoft.Compute/disks', concat(variables('DataDisksPrefix'),copyIndex('DataDisks')))]"
                     },
                     "caching": "None",
                     "createOption": "Attach"

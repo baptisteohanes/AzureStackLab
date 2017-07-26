@@ -115,10 +115,10 @@
             "diskSizeGB": 256
           },
             "copy": [{
-                "name": "StorageProfileDataDisksLoop",
+                "name": "DataDisks",
                 "count": 4,
                 "input": {
-                    "lun": "[copyIndex('StorageProfileDataDisksLoop')]",
+                    "lun": "[copyIndex('DataDisks')]",
                     "managedDisk": {
                         "id": "[resourceId('Microsoft.Compute/disks', concat(variables('DataDisksPrefix'),copyIndex('StorageProfileDataDisksLoop')))]"
                     },

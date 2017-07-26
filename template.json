@@ -1,8 +1,181 @@
 {
   "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "0.1.0.0",
-  "parameters": {  },
-  "variables": {  },
-  "resources": [  ],
+  "parameters": {
+    "VMname": {
+      "type": "string",
+      "defaultValue": "TEST",
+      "metadata": {
+        "description": "Name of the VM hosting the Azure Stack lab deployment"
+      }
+    },
+    "VNet": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the Vnet in which the machine will be hosted"
+      }
+    },
+    "Subnet": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the subnet were the NIC will have its primary IP"
+      }
+    },
+    "LocalAdminName": {
+      "type": "string",
+      "defaultValue": "AzureAdmin",
+      "metadata": {
+        "description": "Name of the local admin of the machines"
+      }
+    },
+    "LocalAdminPassword": {
+      "defaultValue": null,
+      "type": "securestring"
+    }
+  },
+  "variables": {
+    "OsDiskName": "[concat(parameters('VMname'),'-OS')]",
+    "DataDisksPrefix": "[concat(parameters('VMname'),'-DATA')]",
+    "VnetID": "[resourceId('Microsoft.Network/virtualNetworks', parameters('VNet'))]",
+    "SubnetRefID": "[concat(variables('VnetID'),'/subnets/', parameters('Subnet'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[concat(parameters('VMname'),'-NIC')]",
+      "apiVersion": "2016-03-30",
+      "location": "[resourceGroup().location]",
+      "tags": { "displayName": "NIC" },
+      "comments": "This NIC is plugged to the Azurestack lab of this specific deployment",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('SubnetRefId')]"
+              }
+            }
+          }
+        ],
+        "dnsSettings": {
+          "dnsServers": []
+        }
+      },
+      "resources": [],
+      "dependsOn": [
+        "[variables('VnetID')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Compute/disks",
+      "name": "[concat(variables('DataDisksPrefix'),copyIndex())]",
+      "apiVersion": "2016-04-30-preview",
+      "location": "[resourceGroup().location]",
+      "copy": {
+        "name": "disksloop",
+        "count": 4
+      },
+
+      "tags": { "displayName": "Managed Disks - Data Disk" },
+      "comments": "One of the 4 minumum data disks used for deployment",
+      "properties": {
+        "creationData": {
+          "createOption": "Empty"
+        },
+        "accountType": "Standard_LRS",
+        "diskSizeGB": 512
+      }
+    },
+        {
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[parameters('VMname')]",
+      "apiVersion": "2016-04-30-preview",
+      "location": "[resourceGroup().location]",
+      "tags": { "displayName": "AzureStack Host VM" },
+      "comments": "AzureStack Host VM",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "Standard_E16_v3"
+        },
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "MicrosoftWindowsServer",
+            "offer": "WindowsServer",
+            "sku": "2016-Datacenter",
+            "version": "latest"
+          },
+          "osDisk": {
+            "osType": "Windows",
+            "caching": "ReadWrite",
+            "createOption": "FromImage",
+            "name": "[variables('OSDiskName')]",
+            "managedDisk": {
+              "storageAccountType": "Standard_LRS"
+            },
+            "diskSizeGB": 256
+          },
+          "dataDisks": [
+           {
+              "lun": 0,
+              "managedDisk": {
+                "id": "[resourceId('Microsoft.Compute/disks', concat(variables('DataDisksPrefix'),'0'))]"
+              },
+              "caching": "None",
+              "createOption": "Attach"
+            },
+                       {
+              "lun": 1,
+              "managedDisk": {
+                "id": "[resourceId('Microsoft.Compute/disks', concat(variables('DataDisksPrefix'),'1'))]"
+              },
+              "caching": "None",
+              "createOption": "Attach"
+            },
+                       {
+              "lun": 2,
+              "managedDisk": {
+                "id": "[resourceId('Microsoft.Compute/disks', concat(variables('DataDisksPrefix'),'2'))]"
+              },
+              "caching": "None",
+              "createOption": "Attach"
+            },
+                       {
+              "lun": 3,
+              "managedDisk": {
+                "id": "[resourceId('Microsoft.Compute/disks', concat(variables('DataDisksPrefix'),'3'))]"
+              },
+              "caching": "None",
+              "createOption": "Attach"
+            }
+          ]
+        },
+        "osProfile": {
+          "computerName": "[parameters('VMname')]",
+          "adminUsername": "[parameters('LocalAdminName')]",
+          "windowsConfiguration": {
+            "provisionVMAgent": true,
+            "enableAutomaticUpdates": true
+          },
+          "adminPassword": "[parameters('LocalAdminPassword')]"
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(parameters('VMname'),'-NIC'))]"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/disks', concat(variables('DataDisksPrefix'),'0'))]",
+        "[resourceId('Microsoft.Compute/disks', concat(variables('DataDisksPrefix'),'1'))]",
+        "[resourceId('Microsoft.Compute/disks', concat(variables('DataDisksPrefix'),'2'))]",
+        "[resourceId('Microsoft.Compute/disks', concat(variables('DataDisksPrefix'),'3'))]",
+        "[resourceId('Microsoft.Network/networkInterfaces', concat(parameters('VMname'),'-NIC'))]"
+      ]
+    }
+  ],
   "outputs": {  }
 }

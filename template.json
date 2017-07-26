@@ -64,9 +64,7 @@
         }
       },
       "resources": [],
-      "dependsOn": [
-        "[variables('VnetID')]"
-      ]
+      "dependsOn": []
     },
     {
       "type": "Microsoft.Compute/disks",

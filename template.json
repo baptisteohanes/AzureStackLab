@@ -74,7 +74,7 @@
       "apiVersion": "2016-04-30-preview",
       "location": "[resourceGroup().location]",
       "copy": {
-        "name": "disksloop",
+        "name": "DataDisksLoop",
         "count": 4
       },
 
@@ -116,40 +116,18 @@
             },
             "diskSizeGB": 256
           },
-          "dataDisks": [
-           {
-              "lun": 0,
-              "managedDisk": {
-                "id": "[resourceId('Microsoft.Compute/disks', concat(variables('DataDisksPrefix'),'0'))]"
-              },
-              "caching": "None",
-              "createOption": "Attach"
-            },
-                       {
-              "lun": 1,
-              "managedDisk": {
-                "id": "[resourceId('Microsoft.Compute/disks', concat(variables('DataDisksPrefix'),'1'))]"
-              },
-              "caching": "None",
-              "createOption": "Attach"
-            },
-                       {
-              "lun": 2,
-              "managedDisk": {
-                "id": "[resourceId('Microsoft.Compute/disks', concat(variables('DataDisksPrefix'),'2'))]"
-              },
-              "caching": "None",
-              "createOption": "Attach"
-            },
-                       {
-              "lun": 3,
-              "managedDisk": {
-                "id": "[resourceId('Microsoft.Compute/disks', concat(variables('DataDisksPrefix'),'3'))]"
-              },
-              "caching": "None",
-              "createOption": "Attach"
-            }
-          ]
+            "copy": [{
+                "name": "StorageProfileDataDisksLoop",
+                "count": 4,
+                "input": {
+                    "lun": "[copyIndex('StorageProfileDataDisksLoop')]",
+                    "managedDisk": {
+                        "id": "[resourceId('Microsoft.Compute/disks', concat(variables('DataDisksPrefix'),copyIndex('StorageProfileDataDisksLoop')))]"
+                    },
+                    "caching": "None",
+                    "createOption": "Attach"
+                }
+            }]
         },
         "osProfile": {
           "computerName": "[parameters('VMname')]",
@@ -169,10 +147,7 @@
         }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.Compute/disks', concat(variables('DataDisksPrefix'),'0'))]",
-        "[resourceId('Microsoft.Compute/disks', concat(variables('DataDisksPrefix'),'1'))]",
-        "[resourceId('Microsoft.Compute/disks', concat(variables('DataDisksPrefix'),'2'))]",
-        "[resourceId('Microsoft.Compute/disks', concat(variables('DataDisksPrefix'),'3'))]",
+        "DataDisksLoop",
         "[resourceId('Microsoft.Network/networkInterfaces', concat(parameters('VMname'),'-NIC'))]"
       ]
     }
